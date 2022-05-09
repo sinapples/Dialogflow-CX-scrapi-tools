@@ -1,0 +1,70 @@
+from inspect import Parameter
+from dfcx_scrapi.core.intents import Intents
+from dfcx_scrapi.core.flows import Flows
+
+
+def __main__():
+    # Set up creds
+    creds_path = 'creds.json'
+
+    # agents list
+    agentID = "projects/xxxx/locations/xxxxxx/agents/xxxxxxx"
+
+    # Intents to collect
+    parameterFromTheseIntents = ["YesIntent", "ExampleIntent"]
+    # Call the fucntion
+    getParametersFromDefaultStartPage(creds_path, agentID)
+
+
+# Input agentID and a targent page ID
+# Results in all intents in the agents will be added to the Start Page of the Default Start Flow with a transition route to targetPage
+def getParametersFromDefaultStartPage(creds_path, agentID, intentTargets=[], fileName="parameters_in_DSF.csv"):
+
+    csv = "Intent Name,ParameterName, Value\n"
+
+    # Instantiate our Flows and Pages objects.
+    intents = Intents(creds_path, agent_id=agentID)
+
+    f = Flows(creds_path=creds_path)
+
+    # Get flow maps
+    flows = f.get_flows_map(agentID, reverse=True)
+
+    # Get Default Start Flow for each agent
+    dsf = f.get_flow(flows['Default Start Flow'])
+
+    # Get intent Maps
+    agentIDIntentMap = intents.get_intents_map()
+
+    # Iterate over every Route
+    for route in dsf.transition_routes:
+
+        # Save intent information
+        intentID = route.intent
+        intentName = agentIDIntentMap.get(intentID)
+
+        if(intentName in intentTargets or not intentTargets):
+
+            for param_actions in route.trigger_fulfillment.set_parameter_actions:
+                if param_actions.parameter and param_actions.value:
+                    csv += intentName + "," + \
+                        param_actions.parameter + ","+param_actions.value+"\n"
+
+        # Save info
+
+    print("done")
+
+    # Print to file
+    file(csv,  fileName)
+
+
+def file(output, fileName):
+    text_file = open(fileName, "w")
+    n = text_file.write(output)
+    text_file.close()
+
+
+######################################
+
+
+__main__()
